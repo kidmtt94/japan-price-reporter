@@ -1,0 +1,78 @@
+name: 📈 Daily Japan Market Report - 17:00 JST
+
+on:
+  schedule:
+    # 7:50 UTC = 16:50 JST (UTC+9)、月曜〜金曜
+    # GitHub Actions の実際の遅延（約5〜15分）を見込んで10分早めに設定
+    - cron: '50 7 * * 1-5'
+  # GitHub UI から手動実行できるようにする（テスト用）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Bark 通知を送らずに試す？'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      skip_llm:
+        description: 'Gemini を使わずテンプレートで出力する？'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+env:
+  WATCHLIST: "8306,7203,9984"
+
+jobs:
+  run-report:
+    name: 🚀 マーケットレポートを実行
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Install Poetry
+        run: pipx install poetry
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'poetry'
+
+      - name: 📦 依存パッケージをインストール
+        run: poetry install --no-root
+
+      - name: 🕔 現在時刻を確認 (JST)
+        run: |
+          echo "UTC time: $(date -u)"
+          echo "JST time: $(TZ='Asia/Tokyo' date)"
+
+      - name: 📊 マーケットレポートを実行
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BARK_KEY: ${{ secrets.BARK_KEY }}
+          BARK_SERVER: ${{ secrets.BARK_SERVER }}
+          PYTHONIOENCODING: utf-8
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          SKIP_LLM: ${{ github.event.inputs.skip_llm }}
+        run: |
+          ARGS=""
+          if [ "$DRY_RUN" == "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "$SKIP_LLM" == "true" ]; then ARGS="$ARGS --skip-llm"; fi
+          poetry run python main.py --watchlist "$WATCHLIST" $ARGS
+
+      - name: 📁 Markdown レポートをアップロード
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-report-${{ github.run_id }}
+          path: reports/
+          retention-days: 30
