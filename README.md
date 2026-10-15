@@ -3,6 +3,8 @@
 毎日 **17:00（月〜金）** に、**日本株マーケットの通知を iPhone に自動送信**します。  
 **AI（Gemini）** が分析し、GitHub 上で**完全無料**で動きます。
 
+👉 **[毎日のレポート実例を見る](https://kidmtt94.github.io/japan-price-reporter/reports/)**
+
 ---
 
 ## ✨ 機能 — すべて無料

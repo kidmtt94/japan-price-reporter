@@ -28,6 +28,10 @@ on:
 env:
   WATCHLIST: "8306,7203,9984,6702"
 
+# レポートを commit するため（60日間更新がないと GitHub が schedule を自動停止する）
+permissions:
+  contents: write
+
 jobs:
   run-report:
     name: 🚀 マーケットレポートを実行
@@ -69,10 +73,9 @@ jobs:
           if [ "$SKIP_LLM" == "true" ]; then ARGS="$ARGS --skip-llm"; fi
           poetry run python main.py --watchlist "$WATCHLIST" $ARGS
 
-      - name: 📁 Markdown レポートをアップロード
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: market-report-${{ github.run_id }}
-          path: reports/
-          retention-days: 30
+      - name: 💾 レポートをリポジトリに保存（GitHub Pages で公開）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f reports/
+          git diff --cached --quiet || { git commit -m "📊 Daily report $(TZ=Asia/Tokyo date +%F)" && git push; }

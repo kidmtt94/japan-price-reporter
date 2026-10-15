@@ -19,7 +19,7 @@ env/
 .env
 
 # Reports
-reports/
+# reports/
 
 # IDE
 .vscode/
